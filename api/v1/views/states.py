@@ -8,6 +8,7 @@ from models.state import State
 
 app = Flask(__name__)
 
+
 @app_views.route('/states', methods=['GET'], strict_slashes=False)
 def get_states():
     """Retrieves the list of all State objects"""
