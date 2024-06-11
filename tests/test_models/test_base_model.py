@@ -7,7 +7,9 @@ import pep8 as pycodestyle
 import time
 import unittest
 from unittest import mock
+import hashlib
 BaseModel = models.base_model.BaseModel
+User = models.user.User
 module_doc = models.base_model.__doc__
 
 
@@ -15,9 +17,9 @@ class TestBaseModelDocs(unittest.TestCase):
     """Tests to check the documentation and style of BaseModel class"""
 
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         """Set up for docstring tests"""
-        self.base_funcs = inspect.getmembers(BaseModel, inspect.isfunction)
+        cls.base_funcs = inspect.getmembers(BaseModel, inspect.isfunction)
 
     def test_pep8_conformance(self):
         """Test that models/base_model.py conforms to PEP8."""
@@ -159,3 +161,34 @@ class TestBaseModel(unittest.TestCase):
         self.assertEqual(old_created_at, new_created_at)
         self.assertTrue(mock_storage.new.called)
         self.assertTrue(mock_storage.save.called)
+
+
+class TestUser(unittest.TestCase):
+    """Test the User class"""
+
+    def test_password_hashing(self):
+        """Test that the password is hashed correctly"""
+        user = User(email="user@example.com", password="mypassword")
+        self.assertNotEqual(user.password, "mypassword")
+        self.assertEqual(user.password, hashlib.md5("mypassword".encode()).hexdigest())
+
+    def test_password_update(self):
+        """Test that updating the password rehashes it"""
+        user = User(email="user@example.com", password="mypassword")
+        old_password_hash = user.password
+        user.password = "newpassword"
+        self.assertNotEqual(user.password, "newpassword")
+        self.assertNotEqual(user.password, old_password_hash)
+        self.assertEqual(user.password, hashlib.md5("newpassword".encode()).hexdigest())
+
+    def test_to_dict(self):
+        """Test that the password is not included in the dictionary representation"""
+        user = User(email="user@example.com", password="mypassword")
+        user_dict = user.to_dict()
+        self.assertNotIn("password", user_dict)
+
+    def test_to_dict_save_to_disk(self):
+        """Test that the password is included in the dictionary when save_to_disk is True"""
+        user = User(email="user@example.com", password="mypassword")
+        user_dict = user.to_dict(save_to_disk=True)
+        self.assertIn("password", user_dict)
